@@ -1,4 +1,4 @@
-# Contributing to Soenneker.Python.Utils.File
+﻿# Contributing to Soenneker.Python.Utils.File
 
 We're excited that you're interested in contributing!
 
