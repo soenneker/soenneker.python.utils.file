@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using Soenneker.Extensions.Task;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.File.Abstract;
 using Soenneker.Extensions.String;
@@ -13,7 +12,7 @@ using System.Threading;
 namespace Soenneker.Python.Utils.File;
 
 /// <inheritdoc cref="IPythonFileUtil"/>
-public class PythonFileUtil : IPythonFileUtil
+public sealed class PythonFileUtil : IPythonFileUtil
 {
     private readonly ILogger<PythonFileUtil> _logger;
     private readonly IFileUtil _fileUtil;
@@ -41,7 +40,7 @@ public class PythonFileUtil : IPythonFileUtil
             try
             {
                 // Read all lines from the Python file
-                List<string> lines = await _fileUtil.ReadAsLines(scriptPath, cancellationToken).NoSync();
+                List<string> lines = await _fileUtil.ReadAsLines(scriptPath, true, cancellationToken).NoSync();
                 var isModified = false;
 
                 for (var i = 0; i < lines.Count; i++)
@@ -70,7 +69,7 @@ public class PythonFileUtil : IPythonFileUtil
                 // Only write back to the file if modifications were made
                 if (isModified)
                 {
-                    await _fileUtil.WriteAllLines(scriptPath, lines, cancellationToken).NoSync();
+                    await _fileUtil.WriteAllLines(scriptPath, lines, true, cancellationToken).NoSync();
                     _logger.LogInformation("Updated: {ScriptPath}", scriptPath);
                 }
                 else
