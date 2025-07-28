@@ -8,6 +8,7 @@ using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.File.Abstract;
 using Soenneker.Extensions.String;
 using System.Threading;
+using Soenneker.Extensions.Task;
 
 namespace Soenneker.Python.Utils.File;
 
