@@ -14,7 +14,7 @@
         <AssemblyName>Soenneker.Python.Utils.File</AssemblyName>
         <PackageId>Soenneker.Python.Utils.File</PackageId>
         <PackageTags>python utils file import util pythonfileutil csharp dotnet c# .net</PackageTags>
-        <Copyright>Copyright © 2025 Jake Soenneker</Copyright>
+        <Copyright>Copyright © 2025-2026 Jake Soenneker</Copyright>
         <Authors>Jake Soenneker</Authors>
         <Company>https://soenneker.com</Company>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
