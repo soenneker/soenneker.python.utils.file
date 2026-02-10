@@ -3,6 +3,7 @@ using Soenneker.Extensions.String;
 using Soenneker.Extensions.Task;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Python.Utils.File.Abstract;
+using Soenneker.Utils.Directory.Abstract;
 using Soenneker.Utils.File.Abstract;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
 {
     private readonly ILogger<PythonFileUtil> _logger;
     private readonly IFileUtil _fileUtil;
+    private readonly IDirectoryUtil _directoryUtil;
 
     // Matches single-line "from .foo import bar" and "from . import bar"
     // Captures: indent, dots, module(optional), imported(rest), comment(optional)
@@ -25,15 +27,16 @@ public sealed class PythonFileUtil : IPythonFileUtil
         @"^(?<indent>\s*)from\s+(?<dots>\.+)(?<module>[A-Za-z_][A-Za-z0-9_\.]*)?\s+import\s+(?<imported>.*?)(?<comment>\s*#.*)?\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    public PythonFileUtil(ILogger<PythonFileUtil> logger, IFileUtil fileUtil)
+    public PythonFileUtil(ILogger<PythonFileUtil> logger, IFileUtil fileUtil, IDirectoryUtil directoryUtil)
     {
         _logger = logger;
         _fileUtil = fileUtil;
+        _directoryUtil = directoryUtil;
     }
 
     public async ValueTask ConvertRelativeImports(string directory, CancellationToken cancellationToken = default)
     {
-        if (!Directory.Exists(directory))
+        if (!(await _directoryUtil.Exists(directory, cancellationToken)))
         {
             _logger.LogError("Directory {Directory} does not exist.", directory);
             throw new DirectoryNotFoundException($"Directory {directory} does not exist.");
@@ -50,7 +53,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
 
         string packageName = new DirectoryInfo(directory).Name;
 
-        string[] pythonFiles = Directory.GetFiles(directory, "*.py", SearchOption.AllDirectories);
+        List<string> pythonFiles = await _directoryUtil.GetFilesByExtension(directory, "py", true, cancellationToken);
 
         foreach (string scriptPath in pythonFiles)
         {
