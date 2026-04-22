@@ -1,20 +1,19 @@
 using Soenneker.Python.Utils.File.Abstract;
-using Soenneker.Tests.FixturedUnit;
-using Xunit;
+using Soenneker.Tests.HostedUnit;
 
 namespace Soenneker.Python.Utils.File.Tests;
 
-[Collection("Collection")]
-public class PythonFileUtilTests : FixturedUnitTest
+[ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
+public class PythonFileUtilTests : HostedUnitTest
 {
     private readonly IPythonFileUtil _util;
 
-    public PythonFileUtilTests(Fixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public PythonFileUtilTests(Host host) : base(host)
     {
         _util = Resolve<IPythonFileUtil>(true);
     }
 
-    [Fact]
+    [Test]
     public void Default()
     {
 
