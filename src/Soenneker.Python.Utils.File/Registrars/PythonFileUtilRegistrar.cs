@@ -14,6 +14,8 @@ public static class PythonFileUtilRegistrar
     /// <summary>
     /// Adds <see cref="IPythonFileUtil"/> as a singleton service. <para/>
     /// </summary>
+    /// <param name="services">Service collection that receives the registration.</param>
+    /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddPythonFileUtilAsSingleton(this IServiceCollection services)
     {
         services.AddDirectoryUtilAsSingleton().AddFileUtilAsSingleton();
@@ -25,6 +27,8 @@ public static class PythonFileUtilRegistrar
     /// <summary>
     /// Adds <see cref="IPythonFileUtil"/> as a scoped service. <para/>
     /// </summary>
+    /// <param name="services">Service collection that receives the registration.</param>
+    /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddPythonFileUtilAsScoped(this IServiceCollection services)
     {
         services.AddDirectoryUtilAsScoped().AddFileUtilAsScoped();
