@@ -1,43 +1,59 @@
 [![](https://img.shields.io/nuget/v/soenneker.python.utils.file.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.python.utils.file/)
+[![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.python.utils.file/build-and-test.yml?style=for-the-badge)](https://github.com/soenneker/soenneker.python.utils.file/actions/workflows/build-and-test.yml)
 [![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.python.utils.file/publish-package.yml?style=for-the-badge)](https://github.com/soenneker/soenneker.python.utils.file/actions/workflows/publish-package.yml)
 [![](https://img.shields.io/nuget/dt/soenneker.python.utils.file.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.python.utils.file/)
 [![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.python.utils.file/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/soenneker/soenneker.python.utils.file/actions/workflows/codeql.yml)
 
 # Soenneker.Python.Utils.File
 
-Python file operations via .NET.
+Rewrites safe single-dot relative imports in a Python package to absolute, package-qualified imports.
 
-## Install
+## Installation
 
 ```bash
 dotnet add package Soenneker.Python.Utils.File
 ```
 
-## Quick start
+## Registration and usage
 
 ```csharp
+using Soenneker.Python.Utils.File.Abstract;
 using Soenneker.Python.Utils.File.Registrars;
-using Microsoft.Extensions.DependencyInjection;
 
-var services = new ServiceCollection();
-var result = services.AddPythonFileUtilAsSingleton();
+services.AddPythonFileUtilAsScoped();
+
+IPythonFileUtil pythonFiles =
+    serviceProvider.GetRequiredService<IPythonFileUtil>();
+
+await pythonFiles.ConvertRelativeImports(
+    @"C:\src\my_package",
+    cancellationToken);
 ```
 
-Adds `IPythonFileUtil` as a singleton service.
+The root must contain `__init__.py`, and its directory name must be a valid Python identifier.
 
-## What you get
+## Rewrites
 
-- `IPythonFileUtil` — Python file operations via .NET.
-- `PythonFileUtilRegistrar` — Python file operations via .NET.
+For `my_package/module.py`:
 
-## API at a glance
+```python
+from .helpers import parse
+# becomes: from my_package.helpers import parse
+```
 
-| API | What it does | Result / important behavior |
-| --- | --- | --- |
-| `IPythonFileUtil.ConvertRelativeImports(directory, cancellationToken)` | Converts all relative imports to absolute imports in Python scripts within the specified directory. | A task that completes when the convert relative imports operation is complete. |
-| `PythonFileUtilRegistrar.AddPythonFileUtilAsSingleton(services)` | Adds `IPythonFileUtil` as a singleton service. | The same service collection, so additional registrations can be chained. |
-| `PythonFileUtilRegistrar.AddPythonFileUtilAsScoped(services)` | Adds `IPythonFileUtil` as a scoped service. | The same service collection, so additional registrations can be chained. |
+For `my_package/features/module.py`, when `features/__init__.py` exists:
 
-## Practical notes
+```python
+from .helpers import parse
+# becomes: from my_package.features.helpers import parse
+```
 
-- Cancellation stops pending work; it does not undo work that has already completed.
+Files beneath directories without `__init__.py` are skipped because they are not part of the package chain.
+
+The converter intentionally leaves these unchanged:
+
+- Parent-relative imports such as `from ..common import value`.
+- Multiline imports and imports using line continuations.
+- Ordinary absolute imports.
+
+The operation edits every eligible `.py` file beneath the package. Commit or back up source files first. Cancellation and file errors propagate; a failed run may have updated earlier files, so review the working tree before retrying.

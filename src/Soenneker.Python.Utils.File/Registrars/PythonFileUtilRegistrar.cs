@@ -7,12 +7,12 @@ using Soenneker.Utils.File.Registrars;
 namespace Soenneker.Python.Utils.File.Registrars;
 
 /// <summary>
-/// Python file operations via .NET
+/// Registers the Python file utility and its filesystem dependencies.
 /// </summary>
 public static class PythonFileUtilRegistrar
 {
     /// <summary>
-    /// Adds <see cref="IPythonFileUtil"/> as a singleton service. <para/>
+    /// Adds <see cref="IPythonFileUtil"/> as a singleton service.
     /// </summary>
     /// <param name="services">Service collection that receives the registration.</param>
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
@@ -25,7 +25,7 @@ public static class PythonFileUtilRegistrar
     }
 
     /// <summary>
-    /// Adds <see cref="IPythonFileUtil"/> as a scoped service. <para/>
+    /// Adds <see cref="IPythonFileUtil"/> as a scoped service.
     /// </summary>
     /// <param name="services">Service collection that receives the registration.</param>
     /// <returns>The same service collection, so additional registrations can be chained.</returns>

@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 
 namespace Soenneker.Python.Utils.File;
 
-/// <inheritdoc cref="IPythonFileUtil"/>
 public sealed class PythonFileUtil : IPythonFileUtil
 {
     private readonly ILogger<PythonFileUtil> _logger;
@@ -25,6 +24,10 @@ public sealed class PythonFileUtil : IPythonFileUtil
     // Captures: indent, dots, module(optional), imported(rest), comment(optional)
     private static readonly Regex _fromImportRegex = new(
         @"^(?<indent>\s*)from\s+(?<dots>\.+)(?<module>[A-Za-z_][A-Za-z0-9_\.]*)?\s+import\s+(?<imported>.*?)(?<comment>\s*#.*)?\s*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex _pythonIdentifierRegex = new(
+        "^[A-Za-z_][A-Za-z0-9_]*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public PythonFileUtil(ILogger<PythonFileUtil> logger, IFileUtil fileUtil, IDirectoryUtil directoryUtil)
@@ -51,49 +54,77 @@ public sealed class PythonFileUtil : IPythonFileUtil
             return;
         }
 
-        string packageName = new DirectoryInfo(directory).Name;
+        string root = Path.GetFullPath(directory);
+        string rootPackageName = new DirectoryInfo(root).Name;
 
-        List<string> pythonFiles = await _directoryUtil.GetFilesByExtension(directory, "py", true, cancellationToken);
+        if (!_pythonIdentifierRegex.IsMatch(rootPackageName))
+            throw new InvalidOperationException($"Package directory '{rootPackageName}' is not a valid Python identifier.");
+
+        List<string> pythonFiles = await _directoryUtil.GetFilesByExtension(root, "py", true, cancellationToken);
 
         foreach (string scriptPath in pythonFiles)
         {
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string? packageName = ResolveContainingPackage(root, rootPackageName, scriptPath);
+            if (packageName is null)
             {
-                List<string> lines = await _fileUtil.ReadAsLines(scriptPath, true, cancellationToken).NoSync();
-                var modified = false;
-
-                for (int i = 0; i < lines.Count; i++)
-                {
-                    string originalLine = lines[i];
-
-                    if (!TryRewriteRelativeImportLine(originalLine, packageName, out string rewritten))
-                        continue;
-
-                    if (!rewritten.Equals(originalLine, StringComparison.Ordinal))
-                    {
-                        lines[i] = rewritten;
-                        modified = true;
-
-                        _logger.LogDebug("Modified line in {ScriptPath}: \"{Original}\" -> \"{Modified}\"",
-                            scriptPath, originalLine.Trim(), rewritten.Trim());
-                    }
-                }
-
-                if (modified)
-                {
-                    await _fileUtil.WriteAllLines(scriptPath, lines, true, cancellationToken).NoSync();
-                    _logger.LogInformation("Updated: {ScriptPath}", scriptPath);
-                }
-                else
-                {
-                    _logger.LogInformation("No changes needed for: {ScriptPath}", scriptPath);
-                }
+                _logger.LogDebug("Skipping {ScriptPath} because it is not inside a Python package.", scriptPath);
+                continue;
             }
-            catch (Exception ex)
+
+            List<string> lines = await _fileUtil.ReadAsLines(scriptPath, true, cancellationToken).NoSync();
+            var modified = false;
+
+            for (int i = 0; i < lines.Count; i++)
             {
-                _logger.LogError(ex, "Error processing file {ScriptPath}", scriptPath);
+                string originalLine = lines[i];
+
+                if (!TryRewriteRelativeImportLine(originalLine, packageName, out string rewritten) || rewritten.Equals(originalLine, StringComparison.Ordinal))
+                    continue;
+
+                lines[i] = rewritten;
+                modified = true;
             }
+
+            if (modified)
+                await _fileUtil.WriteAllLines(scriptPath, lines, true, cancellationToken).NoSync();
         }
+    }
+
+    private static string? ResolveContainingPackage(string root, string rootPackageName, string scriptPath)
+    {
+        string fullScriptPath = Path.GetFullPath(scriptPath);
+        string? scriptDirectory = Path.GetDirectoryName(fullScriptPath);
+
+        if (scriptDirectory is null)
+            throw new InvalidOperationException($"Could not determine the containing directory for '{scriptPath}'.");
+
+        string relativeDirectory = Path.GetRelativePath(root, scriptDirectory);
+
+        if (Path.IsPathRooted(relativeDirectory) || relativeDirectory.StartsWith("..", StringComparison.Ordinal))
+            throw new InvalidOperationException($"Refusing to modify a Python file outside '{root}'.");
+
+        if (relativeDirectory == ".")
+            return rootPackageName;
+
+        string[] segments = relativeDirectory.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+        string currentDirectory = root;
+        var packageName = rootPackageName;
+
+        foreach (string segment in segments)
+        {
+            if (!_pythonIdentifierRegex.IsMatch(segment))
+                return null;
+
+            currentDirectory = Path.Combine(currentDirectory, segment);
+            if (!System.IO.File.Exists(Path.Combine(currentDirectory, "__init__.py")))
+                return null;
+
+            packageName += $".{segment}";
+        }
+
+        return packageName;
     }
 
     private static bool TryRewriteRelativeImportLine(string line, string packageName, out string rewritten)
