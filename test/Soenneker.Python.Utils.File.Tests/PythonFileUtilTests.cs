@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using Soenneker.Python.Utils.File.Abstract;
@@ -18,7 +19,7 @@ public sealed class PythonFileUtilTests : HostedUnitTest
     }
 
     [Test]
-    public async Task Nested_packages_use_their_full_package_name()
+    public async Task Nested_packages_use_their_full_package_name(CancellationToken cancellationToken)
     {
         string parent = Path.Combine(Path.GetTempPath(), "soenneker-python-file-tests", Guid.NewGuid().ToString("N"));
         string root = Path.Combine(parent, "my_package");
@@ -38,7 +39,7 @@ public sealed class PythonFileUtilTests : HostedUnitTest
             await System.IO.File.WriteAllTextAsync(featureModule, "from .helpers import parse");
             await System.IO.File.WriteAllTextAsync(looseModule, "from .helpers import parse");
 
-            await _util.ConvertRelativeImports(root);
+            await _util.ConvertRelativeImports(root, cancellationToken: cancellationToken);
 
             (await System.IO.File.ReadAllTextAsync(rootModule)).Should().Contain("from my_package.helpers import parse");
             (await System.IO.File.ReadAllTextAsync(featureModule)).Should().Contain("from my_package.features.helpers import parse");
