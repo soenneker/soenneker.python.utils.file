@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace Soenneker.Python.Utils.File;
 
+/// <inheritdoc cref="IPythonFileUtil" />
 public sealed class PythonFileUtil : IPythonFileUtil
 {
     private readonly ILogger<PythonFileUtil> _logger;
