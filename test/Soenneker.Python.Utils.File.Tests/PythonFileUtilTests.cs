@@ -1,3 +1,4 @@
+using Soenneker.Utils.File.Abstract;
 using System;
 using System.IO;
 using System.Threading;
@@ -11,10 +12,13 @@ namespace Soenneker.Python.Utils.File.Tests;
 [ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
 public sealed class PythonFileUtilTests : HostedUnitTest
 {
+    private readonly IFileUtil _fileUtil;
+
     private readonly IPythonFileUtil _util;
 
     public PythonFileUtilTests(Host host) : base(host)
     {
+        _fileUtil = Resolve<IFileUtil>(true);
         _util = Resolve<IPythonFileUtil>(true);
     }
 
@@ -33,17 +37,17 @@ public sealed class PythonFileUtilTests : HostedUnitTest
         {
             Directory.CreateDirectory(featureDirectory);
             Directory.CreateDirectory(looseDirectory);
-            await System.IO.File.WriteAllTextAsync(Path.Combine(root, "__init__.py"), string.Empty);
-            await System.IO.File.WriteAllTextAsync(Path.Combine(featureDirectory, "__init__.py"), string.Empty);
-            await System.IO.File.WriteAllTextAsync(rootModule, "from .helpers import parse");
-            await System.IO.File.WriteAllTextAsync(featureModule, "from .helpers import parse");
-            await System.IO.File.WriteAllTextAsync(looseModule, "from .helpers import parse");
+            await _fileUtil.Write(Path.Combine(root, "__init__.py"), string.Empty);
+            await _fileUtil.Write(Path.Combine(featureDirectory, "__init__.py"), string.Empty);
+            await _fileUtil.Write(rootModule, "from .helpers import parse");
+            await _fileUtil.Write(featureModule, "from .helpers import parse");
+            await _fileUtil.Write(looseModule, "from .helpers import parse");
 
             await _util.ConvertRelativeImports(root, cancellationToken: cancellationToken);
 
-            (await System.IO.File.ReadAllTextAsync(rootModule)).Should().Contain("from my_package.helpers import parse");
-            (await System.IO.File.ReadAllTextAsync(featureModule)).Should().Contain("from my_package.features.helpers import parse");
-            (await System.IO.File.ReadAllTextAsync(looseModule)).Should().Contain("from .helpers import parse");
+            (await _fileUtil.Read(rootModule)).Should().Contain("from my_package.helpers import parse");
+            (await _fileUtil.Read(featureModule)).Should().Contain("from my_package.features.helpers import parse");
+            (await _fileUtil.Read(looseModule)).Should().Contain("from .helpers import parse");
         }
         finally
         {

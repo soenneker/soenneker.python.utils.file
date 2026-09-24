@@ -67,7 +67,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string? packageName = ResolveContainingPackage(root, rootPackageName, scriptPath);
+            string? packageName = await ResolveContainingPackage(root, rootPackageName, scriptPath, cancellationToken).NoSync();
             if (packageName is null)
             {
                 _logger.LogDebug("Skipping {ScriptPath} because it is not inside a Python package.", scriptPath);
@@ -93,7 +93,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
         }
     }
 
-    private static string? ResolveContainingPackage(string root, string rootPackageName, string scriptPath)
+    private async ValueTask<string?> ResolveContainingPackage(string root, string rootPackageName, string scriptPath, CancellationToken cancellationToken)
     {
         string fullScriptPath = Path.GetFullPath(scriptPath);
         string? scriptDirectory = Path.GetDirectoryName(fullScriptPath);
@@ -119,7 +119,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
                 return null;
 
             currentDirectory = Path.Combine(currentDirectory, segment);
-            if (!System.IO.File.Exists(Path.Combine(currentDirectory, "__init__.py")))
+            if (!await _fileUtil.Exists(Path.Combine(currentDirectory, "__init__.py"), cancellationToken).NoSync())
                 return null;
 
             packageName += $".{segment}";
