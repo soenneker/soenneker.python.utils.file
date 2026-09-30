@@ -23,7 +23,7 @@ public sealed class PythonFileUtilTests : HostedUnitTest
     }
 
     [Test]
-    public async Task Nested_packages_use_their_full_package_name(CancellationToken cancellationToken)
+    public async ValueTask Nested_packages_use_their_full_package_name(CancellationToken cancellationToken)
     {
         string parent = Path.Combine(Path.GetTempPath(), "soenneker-python-file-tests", Guid.NewGuid().ToString("N"));
         string root = Path.Combine(parent, "my_package");
