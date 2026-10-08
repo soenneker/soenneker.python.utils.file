@@ -37,17 +37,17 @@ public sealed class PythonFileUtilTests : HostedUnitTest
         {
             Directory.CreateDirectory(featureDirectory);
             Directory.CreateDirectory(looseDirectory);
-            await _fileUtil.Write(Path.Combine(root, "__init__.py"), string.Empty);
-            await _fileUtil.Write(Path.Combine(featureDirectory, "__init__.py"), string.Empty);
-            await _fileUtil.Write(rootModule, "from .helpers import parse");
-            await _fileUtil.Write(featureModule, "from .helpers import parse");
-            await _fileUtil.Write(looseModule, "from .helpers import parse");
+            await _fileUtil.Write(Path.Combine(root, "__init__.py"), string.Empty, cancellationToken: cancellationToken);
+            await _fileUtil.Write(Path.Combine(featureDirectory, "__init__.py"), string.Empty, cancellationToken: cancellationToken);
+            await _fileUtil.Write(rootModule, "from .helpers import parse", cancellationToken: cancellationToken);
+            await _fileUtil.Write(featureModule, "from .helpers import parse", cancellationToken: cancellationToken);
+            await _fileUtil.Write(looseModule, "from .helpers import parse", cancellationToken: cancellationToken);
 
             await _util.ConvertRelativeImports(root, cancellationToken: cancellationToken);
 
-            (await _fileUtil.Read(rootModule)).Should().Contain("from my_package.helpers import parse");
-            (await _fileUtil.Read(featureModule)).Should().Contain("from my_package.features.helpers import parse");
-            (await _fileUtil.Read(looseModule)).Should().Contain("from .helpers import parse");
+            (await _fileUtil.Read(rootModule, cancellationToken: cancellationToken)).Should().Contain("from my_package.helpers import parse");
+            (await _fileUtil.Read(featureModule, cancellationToken: cancellationToken)).Should().Contain("from my_package.features.helpers import parse");
+            (await _fileUtil.Read(looseModule, cancellationToken: cancellationToken)).Should().Contain("from .helpers import parse");
         }
         finally
         {
