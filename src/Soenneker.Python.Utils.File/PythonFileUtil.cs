@@ -70,7 +70,8 @@ public sealed class PythonFileUtil : IPythonFileUtil
             string? packageName = await ResolveContainingPackage(root, rootPackageName, scriptPath, cancellationToken).NoSync();
             if (packageName is null)
             {
-                _logger.LogDebug("Skipping {ScriptPath} because it is not inside a Python package.", scriptPath);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Skipping {ScriptPath} because it is not inside a Python package.", scriptPath);
                 continue;
             }
 
@@ -137,7 +138,7 @@ public sealed class PythonFileUtil : IPythonFileUtil
         if (!trimmed.StartsWith("from .", StringComparison.Ordinal))
             return false;
 
-        if (line.Contains("\\") || line.Contains("import (") || trimmed.EndsWith("(", StringComparison.Ordinal))
+        if (line.Contains("\\") || line.Contains("import (") || trimmed.EndsWith('('))
             return false;
 
         var m = _fromImportRegex.Match(line);
